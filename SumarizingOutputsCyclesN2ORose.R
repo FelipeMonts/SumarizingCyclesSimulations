@@ -1,4 +1,5 @@
-#  Felipe Montes
+
+#####     Extracting Nitrogen Daily outputs for Corn#  Felipe Montes
 #  2016 02 15
 #  Program to extract and average outputs from N2O Rose Simulations by Dr. Saha.
 
@@ -85,7 +86,6 @@ for (i in FileNames) {
 
 rm(Corn,SeasonOutput.header,SeasonOutput) ;
 
-#####     Extracting Nitrogen Daily outputs for Corn
 
 
 
@@ -132,11 +132,19 @@ DailyColNames[2]<-c("Rotation_Stage_Crop") ;
 
      CornDaily<-DailyOutput[MaizeRows,] ;
 
-     # Extracting the year from the date column and crating a factor with it
+     # Extracting the year from the date column and creating a factor with it
 
 
      
       CornDaily$Year<-as.factor(format(CornDaily$NA_NA_NA_Date,"%Y"));
+
+
+
+
+
+
+
+
 
 
      
