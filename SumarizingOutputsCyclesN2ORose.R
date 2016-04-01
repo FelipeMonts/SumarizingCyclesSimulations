@@ -4,13 +4,25 @@
 #  Program to extract and average outputs from N2O Rose Simulations by Dr. Saha.
 
 #  2016 03 21
-#  Added samll program to convert column names in excell (A,B,C,D....AD, AE...) into column numbers for selection in R (1,2,3,4, ....)
+#  Added small program to convert column names in excell (A,B,C,D....AD, AE...) into column numbers for selection in R (1,2,3,4, ....)
 #  Continue working on sumarizing the necesary daily outputs 
 #  2016 03 22 Added the selection of transitions rows between crops and fallow
 
 #  2016 03 23
 #  Abandon the fallow row selection approach as it was getting too complicated and not getting the desired results
 #  The approach using now is to select all the daily aoutput rows for Maize, Red Clover and Alfalfa, and work with them
+
+#  2016 03 30 
+#  Working on adding year to the season output
+#  Add N2 to the gasous losses
+#  Nitrogen synchrony from cover crop to the crop /or Manure application
+#  Adding Outputs in pounds per acre and Bushels per acre
+#  Temperature, drought and precipitation indices also need to be added
+
+To Do:
+     chaging names of daily ouptut variables to include units
+     Add columns with british units
+
 
 
 
@@ -87,23 +99,48 @@ for (i in FileNames) {
 
      Corn<-SeasonOutput[c(MaizeRows,MaizeRows-1),]  ;
      
+     # Renaming the columns of the Corn summary
+     
+    names(Corn)<-c("Harvest Date","Crop","Grain Yield, Mg/ha","Total Corn Nitrogen Extraction, Mg/ha","Corn Root Nitrogen, Mg/ha", "Corn Grain Nitrogen, Mg/ha", "Cummulative Nitrogen Stress") ;
+     
+     
+     # Adding the values in pounds per acre and bushels per acre
+     # Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
+     # http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
+     
+     Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
+     Mg_ha_to_lb_ac=1000*2.205/2.471
+
+     
+     Corn$`Grain Yield,Bushel/ac`<-Corn$`Grain Yield, Mg/ha` * Mg_ha_to_Bushels_ac ;
+     
+     Corn$`Total Corn Nitrogen Extraction, lb/ac`<-Corn$`Total Corn Nitrogen Extraction, Mg/ha` * Mg_ha_to_lb_ac  ;
+     
+     Corn$`Corn Root Nitrogen, lb/ac`<-Corn$`Corn Root Nitrogen, Mg/ha` * Mg_ha_to_lb_ac  ;
+     
+     Corn$`Corn Grain Nitrogen, lb/ac`<-Corn$`Corn Grain Nitrogen, Mg/ha` *  Mg_ha_to_lb_ac  ;
+
+     
+    # Adding the file name to the column File
+     
      Corn$File<-i
+     
+
+    #  Sorting the data according to Harvest date
 
      Corn<-Corn[do.call(order,Corn),] ;
      
+    # writing the season output to a Table called "Cycles_N2O_Rose_Seasonal_Output"
 
-
-     write.table(Corn, file="..\\CornYieldSeasonSummary.csv",append=T, sep= ",",row.names = F) ;
-     
-    
-     #   Remove objects to open memory space
-     
-     rm(Corn,SeasonOutput.header,SeasonOutput) ;
+     write.table(Corn,file="..\\Cycles_N2O_Rose_Seasonal_Output.csv", append=T, sep=",", row.names= F); 
      
 }
 
 
 
+# Remove objects to open memory space
+     
+rm(Corn,SeasonOutput.header,SeasonOutput) ;
 
 #### Starting Daily outputs data query
 
@@ -111,7 +148,7 @@ for (i in FileNames) {
 # Column numbers from the daily output that are to be kept for data extraction
 
 
-     ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","AT","AU","AX","BA","BC","BD","BG"));
+ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","AT","AU","AX","AZ","BA","BC","BD","BG"));
 
 
 
@@ -152,7 +189,7 @@ for (j in FileNames) {
 
      Maize.Rows<-DailyOutput[DailyOutput$`NA_Rotation_Stage_Crop Name` == c("Maize"),];
 
-     #   Selecting Mineral N at cron planting
+     #   Selecting Mineral N at corn planting
 
      Maize.Planting<-Maize.Rows[Maize.Rows$NA_Crop_Growth_Stage == c("Planting"), ];
 
@@ -169,9 +206,11 @@ for (j in FileNames) {
 
      Maize.NH4Volatilization<-tapply(Maize.Rows$"NA_Ammonia_Volatilization_kg N/ha",Maize.Rows$Year,sum);
 
-     Maize.N2OEmissions<-tapply(Maize.Rows$"Nitrous Oxide_from_Denitrification_kg N/ha",Maize.Rows$Year,sum);
+     Maize.N2O_Denitification<-tapply(Maize.Rows$"Nitrous Oxide_from_Denitrification_kg N/ha",Maize.Rows$Year,sum);
+     
+     Maize.N2O_Nitrification<-tapply(Maize.Rows$"Nitrous Oxide_from_Nitrification_kg N/ha",Maize.Rows$Year,sum);
 
-     Maize.NGaseousLosses<-Maize.NH4Volatilization + Maize.N2OEmissions;
+     Maize.NGaseousLosses<-Maize.NH4Volatilization + Maize.N2O_Denitification + Maize.N2O_Nitrification;
 
      #  Soil Health During Corn
 
@@ -204,25 +243,24 @@ for (j in FileNames) {
      #   Selecting the maximum total crop N of alfalfa by year
 
      Alfalfa.TotalCropN<-tapply(Alfalfa.Rows$`Total_Crop_Nitrogen_kg N/ha`,Alfalfa.Rows$Year,max);
+     
+     #   Adding the file name to keep track
 
-
+     Original.File<-j ;
 
 
      # Sumarizing the results:
 
-     DailyOutput.Summary<-data.frame(Maize.NMineralization,Maize.NLeaching,Maize.NH4Volatilization,Maize.N2OEmissions,Maize.NGaseousLosses,Maize.SoilOC.planting,Maize.SoilOC.Maturiy,RedClover.TotalCropN,Alfalfa.TotalCropN);
+     DailyOutput.Summary<-data.frame(Maize.NMineralization,Maize.NLeaching,Maize.NH4Volatilization,Maize.N2O_Denitification, Maize.N2O_Nitrification,Maize.NGaseousLosses,Maize.SoilOC.planting,Maize.SoilOC.Maturiy,RedClover.TotalCropN,Alfalfa.TotalCropN, Original.File);
 
-     #writting table with the summary
-
-     DailyOutput.Summary$File<-j;
-
-     write.table(DailyOutput.Summary, file="..\\DailyOutput.Summary.csv",append=T, sep= ",",row.names = F) ;
+     # writting table with the summary
      
+     write.table(DailyOutput.Summary,file="..\\Cycles_N2O_Rose_Daily_Output.csv", append=T, sep=",", row.names= T); 
      
-     rm(DailyOutput.Summary,DailyOutput.header,DailyOutput) ;
 }
 
 
+rm(DailyOutput.Summary,DailyOutput.header,DailyOutput) ;
 
 
 
@@ -236,7 +274,7 @@ for (j in FileNames) {
 
 
 
-
+j
 
 
 
