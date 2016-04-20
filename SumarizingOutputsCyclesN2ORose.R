@@ -19,9 +19,30 @@
 #  Adding Outputs in pounds per acre and Bushels per acre
 #  Temperature, drought and precipitation indices also need to be added
 
-To Do:
-     chaging names of daily ouptut variables to include units
-     Add columns with british units
+
+#  2016 04 12
+
+# Added water deficint based on seasonal output for potential and realized evapotranspiration
+# Added Potential Transpiration (Column J) and actual Transpiration (cloumn K) from the Season Outputs to get at the water stress
+# Added Forage yield column
+# Changeds the name of the variables back to the defoult original to make it easier to add an change variables
+
+
+
+# To Do:
+#      chaging names of daily ouptut variables to include units
+#      Add columns with british units
+
+# Alfalfa.TotalCropN<-tapply(Alfalfa.Rows$`Total_Crop_Nitrogen_kg N/ha`,Alfalfa.Rows$Year,max);  # This Does Not work because the maximum alfalfa crop nitrogen could be in the middle of alfalfa and not necesarily the alfalfa before corn
+
+# Maize.SoilOC.Maturiy<-tapply(Maize.Rows.Maturity$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows.Maturity$Year,min); # This Not Always work, because some periods the corn does not get to maturity
+
+
+#  Need to work on a more elaborate water deficit index
+
+
+
+
 
 
 
@@ -62,8 +83,13 @@ Excel.Columns<-c(LETTERS, paste0("A",LETTERS),paste0("B",LETTERS),paste0("C",LET
 
 # Column numbers from the season soutput that are to be kept for data extraction
 
-ColumnsSeason<-which(Excel.Columns %in% c("B", "C" , "F" , "M" , "N" , "O" , "Q"))-1;
+ColumnsSeason<-which(Excel.Columns %in% c("B", "C" , "F" , "G" ,"H", "J" , "K", "M" , "N" , "O" , "P", "Q"))-1;
 
+
+
+###############################################################################################################
+#                          Starting Season Outputs data query                                   
+###############################################################################################################
 
 #  Reading Column headers 
 
@@ -99,10 +125,6 @@ for (i in FileNames) {
 
      Corn<-SeasonOutput[c(MaizeRows,MaizeRows-1),]  ;
      
-     # Renaming the columns of the Corn summary
-     
-    names(Corn)<-c("Harvest Date","Crop","Grain Yield, Mg/ha","Total Corn Nitrogen Extraction, Mg/ha","Corn Root Nitrogen, Mg/ha", "Corn Grain Nitrogen, Mg/ha", "Cummulative Nitrogen Stress") ;
-     
      
      # Adding the values in pounds per acre and bushels per acre
      # Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
@@ -112,13 +134,20 @@ for (i in FileNames) {
      Mg_ha_to_lb_ac=1000*2.205/2.471
 
      
-     Corn$`Grain Yield,Bushel/ac`<-Corn$`Grain Yield, Mg/ha` * Mg_ha_to_Bushels_ac ;
+     Corn$`Grain_Yield_Bushel/ac`<-Corn$`Grain_Yield_Mg/ha` * Mg_ha_to_Bushels_ac ;
      
-     Corn$`Total Corn Nitrogen Extraction, lb/ac`<-Corn$`Total Corn Nitrogen Extraction, Mg/ha` * Mg_ha_to_lb_ac  ;
+     Corn$`Forage_Yield_Bushel/ac`<-Corn$`Forage_Yield_Mg/ha` * Mg_ha_to_lb_ac ;
      
-     Corn$`Corn Root Nitrogen, lb/ac`<-Corn$`Corn Root Nitrogen, Mg/ha` * Mg_ha_to_lb_ac  ;
+     Corn$`Total_Nitrogen_lb/ac`<-Corn$`Total_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
      
-     Corn$`Corn Grain Nitrogen, lb/ac`<-Corn$`Corn Grain Nitrogen, Mg/ha` *  Mg_ha_to_lb_ac  ;
+     Corn$`Root_Nitrogen_lb/ac`<-Corn$`Root_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
+     
+     Corn$`Grain_Nitrogen_lb/ac`<-Corn$`Grain_Nitrogen_Mg/ha` *  Mg_ha_to_lb_ac  ;
+     
+     # Adding the Water strees indicator based in potential and realized evapotranspiration
+     # The Water Stress or water deficit indicator will be calculated as: 1-[Actual_Transpiration_mm / Potential_Transpiration_mm ]
+     
+     Corn$WaterDeficit<-1 - (Corn$Actual_Transpiration_mm / Corn$Potential_Transpiration_mm)    ;
 
      
     # Adding the file name to the column File
@@ -134,21 +163,25 @@ for (i in FileNames) {
 
      write.table(Corn,file="..\\Cycles_N2O_Rose_Seasonal_Output.csv", append=T, sep=",", row.names= F); 
      
+     rm(SeasonOutput)
+     
 }
 
 
 
 # Remove objects to open memory space
      
-rm(Corn,SeasonOutput.header,SeasonOutput) ;
+rm(Corn,SeasonOutput.header) ;
 
-#### Starting Daily outputs data query
 
+###############################################################################################################
+#                          Starting Daily outputs data query                                   
+###############################################################################################################
 
 # Column numbers from the daily output that are to be kept for data extraction
 
 
-ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","AT","AU","AX","AZ","BA","BC","BD","BG"));
+ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","U","V","AT","AU","AX","AZ","BA","BC","BD","BG","BI","BJ"));
 
 
 
@@ -163,7 +196,7 @@ ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","AT","AU","AX","AZ"
 
 DailyColNames<-c(paste(DailyOutput.header[2,],DailyOutput.header[3,],DailyOutput.header[4,],DailyOutput.header[5,],sep="_"))   ;
 
-
+# j=FileNames[1]
 
 for (j in FileNames) {
 
@@ -215,15 +248,29 @@ for (j in FileNames) {
      #  Soil Health During Corn
 
      Maize.SoilOC.planting<-tapply(Maize.Rows$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows$Year,max);
+     
+     Maize.Residue.Resp<-tapply(Maize.Rows$"Residue_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
+     
+     Maize.SOM.Resp<-tapply(Maize.Rows$"SOM_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
 
-     # Maize rows at Maturity
+     # Maize rows at the last day corn was grown in each year
+     
+     Maize.Rows.LastDay<-tapply(Maize.Rows$NA_NA_NA_Day,Maize.Rows$Year,max) ;
+     
+     Year<-as.factor(row.names(Maize.Rows.LastDay)) ;
+     
+     Maize.Data<-data.frame(Maize.Rows.LastDay, Year,row.names = NULL) ;
+     
+     names(Maize.Data)<-c("NA_NA_NA_Day","Year")   ;
+     
+     Maize.LastDay.year<-merge(Maize.Data, Maize.Rows) ;
 
-     Maize.Rows.Maturity<-Maize.Rows[Maize.Rows$NA_Crop_Growth_Stage == c("Maturity"),];  
 
-     # Selectimg the minimum Soil Organic carbon at corn maturity by year
 
-     Maize.SoilOC.Maturiy<-tapply(Maize.Rows.Maturity$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows.Maturity$Year,min);
+     # Selectimg the Soil Organic carbon during the last day corn is growing in each year
 
+     Maize.SoilOC.Maturiy<-Maize.LastDay.year[,c("Year","Soil_Organic_Carbon_Mg/ha")]; 
+     
 
      #   Selecting Red Clover rows in the outputs
 
@@ -240,9 +287,30 @@ for (j in FileNames) {
      Alfalfa.Rows<-DailyOutput[DailyOutput$`NA_Rotation_Stage_Crop Name`== c("Alfalfa"),];
 
 
-     #   Selecting the maximum total crop N of alfalfa by year
+     #   Selecting the maximum total crop N of alfalfa by year 
+     
+     # Selecting the las day of the year that afalfa was grown 
+     
+     Alfalfa.LastDay<-tapply(Alfalfa.Rows$NA_NA_NA_Day,Alfalfa.Rows$Year,max) ;
+     
+     Year<-as.factor(row.names(Alfalfa.LastDay))  ;
+     
+     Alfalfa.Data<-data.frame(Alfalfa.LastDay, Year,row.names = NULL) ;
+     
+     names(Alfalfa.Data)<-c("NA_NA_NA_Day","Year")   ;
+     
 
-     Alfalfa.TotalCropN<-tapply(Alfalfa.Rows$`Total_Crop_Nitrogen_kg N/ha`,Alfalfa.Rows$Year,max);
+     #select the rows of alfalfa with the last day of alafalfa in each year
+     
+     Alfalfa.LastDay.year<-merge(Alfalfa.Data, Alfalfa.Rows) ;
+     
+     
+     # Selecting the Total Crop N for the last day of alfalfa before corn
+
+     Alfalfa.TotalCropN<-Alfalfa.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
+
+     
+     
      
      #   Adding the file name to keep track
 
@@ -257,10 +325,61 @@ for (j in FileNames) {
      
      write.table(DailyOutput.Summary,file="..\\Cycles_N2O_Rose_Daily_Output.csv", append=T, sep=",", row.names= T); 
      
+     rm(DailyOutput) ;
+     
 }
 
 
-rm(DailyOutput.Summary,DailyOutput.header,DailyOutput) ;
+rm(DailyOutput.Summary,DailyOutput.header) ;
+
+
+
+###############################################################################################################
+#                          Starting AnnualSoil Profile data query                                   
+###############################################################################################################
+
+#  Reading Column headers 
+
+
+AnnualSoilProfile.1<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 3, endRow=3, header=F, simplify=T);
+
+#  Creating Coulmn header for classes
+
+AnnualSoilProfile.classes<-as.factor(AnnualSoilProfile.1[!is.na(AnnualSoilProfile.1)] )  ;
+
+#  Creating Coulmn header for layers
+
+AnnualSoilProfile.2<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 4, endRow=5, header=F);
+
+
+AnnualSoilProfile.Layers<-AnnualSoilProfile.2[,!is.na(AnnualSoilProfile.2[2,])] ;
+
+AnnualSoilProfile.Names<-paste(rep(AnnualSoilProfile.classes,each=(length(AnnualSoilProfile.Layers)-1)/length(levels(AnnualSoilProfile.classes))),AnnualSoilProfile.Layers[1,-1],AnnualSoilProfile.Layers[2,-1],sep="_")  ;
+
+AnnualSoilProfile.Names[-1]
+
+AnnualSoilProfile.3<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 6, header=F);
+
+
+AnnualSoilProfile.Data<-AnnualSoilProfile.3[,!is.na(AnnualSoilProfile.3[1,])];
+
+names(AnnualSoilProfile.Data)<-c("Year",AnnualSoilProfile.Names); 
+
+
+
+
+
+
+
+
+#  Reading data columns in each file of contained in the simulations directory
+
+
+#  Reading data columns in each file of contained in the simulations directory
+
+for (k in FileNames) {
+     
+     
 
 
 
@@ -274,7 +393,6 @@ rm(DailyOutput.Summary,DailyOutput.header,DailyOutput) ;
 
 
 
-j
 
 
 
