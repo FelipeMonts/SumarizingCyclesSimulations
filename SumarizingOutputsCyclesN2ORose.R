@@ -177,10 +177,6 @@ for (i in FileNames) {
 
      Corn<-Corn[do.call(order,Corn),] ;
      
-    # writing the season output to a Table called "Cycles_N2O_Rose_Seasonal_Output"
-
-    # write.table(Corn,file="..\\OutputSummary\\Cycles_N2O_Rose_Seasonal_Output.csv", append=T, sep=",", row.names= F); 
-     
     # Write the results into the storing file
 
     Soil.Season.summary<-rbind(Soil.Season.summary,Corn)    ;   
@@ -244,9 +240,7 @@ for (j in FileNames) {
 
      DailyOutput$Year<-as.factor(format(DailyOutput$NA_NA_NA_Date,format="%Y"));
 
-
-     #   Extracting Nitrogen available in  Red Clover and Alfalfa cover crops before Maize; 
-
+     
      #   Selecting Maize rows in the outputs
 
      Maize.Rows<-DailyOutput[DailyOutput$`NA_Rotation_Stage_Crop Name` == c("Maize"),];
@@ -281,6 +275,16 @@ for (j in FileNames) {
      Maize.Residue.Resp<-tapply(Maize.Rows$"Residue_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
      
      Maize.SOM.Resp<-tapply(Maize.Rows$"SOM_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
+     
+     #Grouping the data
+     
+     DailyOutput.Maize.1<-data.frame(Maize.NMineralization , Maize.NLeaching , Maize.NH4Volatilization , Maize.N2O_Denitification , Maize.N2O_Nitrification , Maize.NGaseousLosses , Maize.SoilOC.planting) ;
+     
+     # Adding Year to the grouping ot merge the rest of the data
+     
+     DailyOutput.Maize.1$Year<-as.factor(row.names(DailyOutput.Maize))  ;   
+     
+     
 
      # Maize rows at the last day corn was grown in each year
      
@@ -288,18 +292,24 @@ for (j in FileNames) {
      
      Year<-as.factor(row.names(Maize.Rows.LastDay)) ;
      
-     Maize.Data<-data.frame(Maize.Rows.LastDay, Year,row.names = NULL) ;
+     Maize.Data<-data.frame(Maize.Rows.LastDay, Year) ;
      
      names(Maize.Data)<-c("NA_NA_NA_Day","Year")   ;
      
      Maize.LastDay.year<-merge(Maize.Data, Maize.Rows) ;
 
 
-
      # Selectimg the Soil Organic carbon during the last day corn is growing in each year
 
      Maize.SoilOC.Maturiy<-Maize.LastDay.year[,c("Year","Soil_Organic_Carbon_Mg/ha")]; 
      
+     # Merge Maize.SoilOC.Maturiy with the rest of the data
+     
+     DailyOutput.Maize<-merge(DailyOutput.Maize.1,Maize.SoilOC.Maturiy, by.x="Year", by.y="Year",all=T);
+     
+
+     
+     #   Extracting Nitrogen available in  Red Clover and Alfalfa cover crops before Maize; 
 
      #   Selecting Red Clover rows in the outputs
 
@@ -350,13 +360,16 @@ for (j in FileNames) {
 
      DailyOutput.Summary<-data.frame(Maize.NMineralization , Maize.NLeaching,Maize.NH4Volatilization , Maize.N2O_Denitification, Maize.N2O_Nitrification, Maize.NGaseousLosses , Maize.SoilOC.planting, RedClover.TotalCropN, Original.File) ;
      
-     merge(DailyOutput.Summary,Maize.SoilOC.Maturiy, by="Year",all.x=T) #Maize.SoilOC.Maturiy  Alfalfa.TotalCropN
-
-     # # writting table with the summary
-     # 
-     # write.table(DailyOutput.Summary,file="..\\Cycles_N2O_Rose_Daily_Output.csv", append=T, sep=",", row.names= T); 
-     # 
+     merge(DailyOutput.Summary,merge(Maize.SoilOC.Maturiy, Alfalfa.TotalCropN, by.x="Year", by.y="Year", all=T), by.x="Year", by.y="Year", all=T) 
      
+     
+     
+     #Maize.SoilOC.Maturiy  Alfalfa.TotalCropN
+     
+     
+     
+     
+
      # Write the results into the storing file
 
     Soil.Daily.summary<-rbind(Soil.Daily.summary,DailyOutput.Summary)    ;   
@@ -461,12 +474,6 @@ for (k in FileNames) {
      AnnualSoilProfile.Data$File<-Original.File   ;
      
      
-     # # writting table with the summary
-     # 
-     # AnnualSoilProfile.Data,file="..\\Cycles_N2O_Rose_AnnualSoilProfile.csv", append=T, sep=",", row.names= T); 
-     # 
-    
-
      # Write the results into the storing file
 
       SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data)  ;   
@@ -528,14 +535,13 @@ for (k in FileNames) {
      AnnualSoilProfile.Data$File<-Original.File   ;
      
      AnnualSoilOutputs<-cbind(AnnualSoilOutputs.1,LayerDepth,Original.File) ;
-
-
-     # # writting table with the summary
-     # 
-     # write.table(AnnualSoilOutputs,file="..\\Cycles_N2O_Rose_AnnualSoilOutputs.csv", append=T, sep=",", row.names= T); 
-     # 
      
-     AnnualSoilOutput.summary<-rbind(AnnualSoilOutput.summary,AnnualSoilOutputs)  ;   
+
+    # Write the results into the storing file
+
+     AnnualSoilOutput.summary<-rbind(AnnualSoilOutput.summary,AnnualSoilOutputs)  ; 
+     
+   # Remove the data to create space in memory
      
      rm(AnnualSoilOutputs) ;
      
