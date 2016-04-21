@@ -22,10 +22,18 @@
 
 #  2016 04 12
 
-# Added water deficint based on seasonal output for potential and realized evapotranspiration
+# Added water deficit based on seasonal output for potential and realized evapotranspiration
 # Added Potential Transpiration (Column J) and actual Transpiration (cloumn K) from the Season Outputs to get at the water stress
 # Added Forage yield column
 # Changeds the name of the variables back to the defoult original to make it easier to add an change variables
+
+
+#2016 04 20
+
+# Improved code ouptut and comments  structure
+# Created a new directory to summarize outputs
+# Added a collection file to store all the results and then process it into an excell work book
+
 
 
 
@@ -33,24 +41,18 @@
 #      chaging names of daily ouptut variables to include units
 #      Add columns with british units
 
-# Alfalfa.TotalCropN<-tapply(Alfalfa.Rows$`Total_Crop_Nitrogen_kg N/ha`,Alfalfa.Rows$Year,max);  # This Does Not work because the maximum alfalfa crop nitrogen could be in the middle of alfalfa and not necesarily the alfalfa before corn
-
-# Maize.SoilOC.Maturiy<-tapply(Maize.Rows.Maturity$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows.Maturity$Year,min); # This Not Always work, because some periods the corn does not get to maturity
-
-
-#  Need to work on a more elaborate water deficit index
 
 
 
 
 
+###############################################################################################################
+#                          Loading Packages and setting up working directory                        
+###############################################################################################################
 
 
 
-
-
-
-########### Tell the program where the package libraries are  #####################
+#  Tell the program where the package libraries are  #####################
 
 
 .libPaths("C:/Felipe/R_Library/library")
@@ -72,24 +74,33 @@ library(XLConnect);
 FileNames<-list.files() ;
 
 
-# Name of the file from when data is going to be extracted
+# Create a directoty to summarize the outputs
+
+dir.create("..\\OutputSummary");  
 
 
-#Simulation.File<-FileNames[1] ; 
+
+
+
+
+###############################################################################################################
+#                          Code to extract excell columns by letter name                                  
+###############################################################################################################
+
 
 # Line of codes to convert exell column names to couln numbers to easy extraction in R
 
 Excel.Columns<-c(LETTERS, paste0("A",LETTERS),paste0("B",LETTERS),paste0("C",LETTERS));
 
-# Column numbers from the season soutput that are to be kept for data extraction
-
-ColumnsSeason<-which(Excel.Columns %in% c("B", "C" , "F" , "G" ,"H", "J" , "K", "M" , "N" , "O" , "P", "Q"))-1;
-
-
 
 ###############################################################################################################
 #                          Starting Season Outputs data query                                   
 ###############################################################################################################
+
+# Column numbers from the season soutput that are to be kept for data extraction
+
+ColumnsSeason<-which(Excel.Columns %in% c("B", "C" , "F" , "G" ,"H", "J" , "K", "M" , "N" , "O" , "P", "Q"))-1;
+
 
 #  Reading Column headers 
 
@@ -103,8 +114,15 @@ SeasonColNames<-paste(SeasonOutput.header[1,],SeasonOutput.header[2,],SeasonOutp
 
 #  Reading data columns in each file of contained in the simulations directory
 
-for (i in FileNames) {
 
+#  Create a storing file to accumulate the data of the files after processing
+
+Soil.Season.summary<-data.frame()  ;
+
+
+
+for (i in FileNames) {
+     # i=FileNames[1]
      
      #  Read data columns of in the season output of the simulation ouput spreadsheet
      
@@ -161,7 +179,14 @@ for (i in FileNames) {
      
     # writing the season output to a Table called "Cycles_N2O_Rose_Seasonal_Output"
 
-     write.table(Corn,file="..\\Cycles_N2O_Rose_Seasonal_Output.csv", append=T, sep=",", row.names= F); 
+    # write.table(Corn,file="..\\OutputSummary\\Cycles_N2O_Rose_Seasonal_Output.csv", append=T, sep=",", row.names= F); 
+     
+    # Write the results into the storing file
+
+    Soil.Season.summary<-rbind(Soil.Season.summary,Corn)    ;   
+
+    # Remove the data to create space in memory
+     
      
      rm(SeasonOutput)
      
@@ -185,22 +210,26 @@ ColumnsDaily<-which(Excel.Columns %in% c("A","B","G","H","N","U","V","AT","AU","
 
 
 
-     #  Reading Column headers 
+#  Reading Column headers 
+
+DailyOutput.header<-readWorksheetFromFile(FileNames[1], sheet = "Daily Outputs", startRow = 3, endRow=7, header=F, keep=ColumnsDaily);
 
 
-     DailyOutput.header<-readWorksheetFromFile(FileNames[1], sheet = "Daily Outputs", startRow = 3, endRow=7, header=F, keep=ColumnsDaily);
-
-
-     # Composing and saving the daily ouptput column names
+# Composing and saving the daily ouptput column names
 
 
 DailyColNames<-c(paste(DailyOutput.header[2,],DailyOutput.header[3,],DailyOutput.header[4,],DailyOutput.header[5,],sep="_"))   ;
 
-# j=FileNames[1]
+
+#  Create a storing file to accumulate the data of the files after processing
+
+Soil.Daily.summary<-data.frame()  ;
+
+
 
 for (j in FileNames) {
 
-
+     # j=FileNames[1]
      #  Read data columns of in the daily output of the simulation ouput spreadsheet
      
      
@@ -319,11 +348,21 @@ for (j in FileNames) {
 
      # Sumarizing the results:
 
-     DailyOutput.Summary<-data.frame(Maize.NMineralization,Maize.NLeaching,Maize.NH4Volatilization,Maize.N2O_Denitification, Maize.N2O_Nitrification,Maize.NGaseousLosses,Maize.SoilOC.planting,Maize.SoilOC.Maturiy,RedClover.TotalCropN,Alfalfa.TotalCropN, Original.File);
-
-     # writting table with the summary
+     DailyOutput.Summary<-data.frame(Maize.NMineralization , Maize.NLeaching,Maize.NH4Volatilization , Maize.N2O_Denitification, Maize.N2O_Nitrification, Maize.NGaseousLosses , Maize.SoilOC.planting, RedClover.TotalCropN, Original.File) ;
      
-     write.table(DailyOutput.Summary,file="..\\Cycles_N2O_Rose_Daily_Output.csv", append=T, sep=",", row.names= T); 
+     merge(DailyOutput.Summary,Maize.SoilOC.Maturiy, by="Year",all.x=T) #Maize.SoilOC.Maturiy  Alfalfa.TotalCropN
+
+     # # writting table with the summary
+     # 
+     # write.table(DailyOutput.Summary,file="..\\Cycles_N2O_Rose_Daily_Output.csv", append=T, sep=",", row.names= T); 
+     # 
+     
+     # Write the results into the storing file
+
+    Soil.Daily.summary<-rbind(Soil.Daily.summary,DailyOutput.Summary)    ;   
+
+    # Remove the data to create space in memory
+     
      
      rm(DailyOutput) ;
      
@@ -335,10 +374,12 @@ rm(DailyOutput.Summary,DailyOutput.header) ;
 
 
 ###############################################################################################################
-#                          Starting AnnualSoil Profile data query                                   
+#                          Starting Annual Soil Profile and Annual Outputs data  query                                   
 ###############################################################################################################
 
-#  Reading Column headers 
+
+
+#  Reading Column headers for the Annual Soil Profile Data 
 
 
 AnnualSoilProfile.1<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 3, endRow=3, header=F, simplify=T);
@@ -347,45 +388,168 @@ AnnualSoilProfile.1<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Pr
 
 AnnualSoilProfile.classes<-as.factor(AnnualSoilProfile.1[!is.na(AnnualSoilProfile.1)] )  ;
 
-#  Creating Coulmn header for layers
 
-AnnualSoilProfile.2<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 4, endRow=5, header=F);
+#  Create a storing file to accumulate the data of the files after processing
 
-
-AnnualSoilProfile.Layers<-AnnualSoilProfile.2[,!is.na(AnnualSoilProfile.2[2,])] ;
-
-AnnualSoilProfile.Names<-paste(rep(AnnualSoilProfile.classes,each=(length(AnnualSoilProfile.Layers)-1)/length(levels(AnnualSoilProfile.classes))),AnnualSoilProfile.Layers[1,-1],AnnualSoilProfile.Layers[2,-1],sep="_")  ;
-
-AnnualSoilProfile.Names[-1]
-
-AnnualSoilProfile.3<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Profile", startRow = 6, header=F);
+SoilProfile.summary<-data.frame()  ;
 
 
-AnnualSoilProfile.Data<-AnnualSoilProfile.3[,!is.na(AnnualSoilProfile.3[1,])];
-
-names(AnnualSoilProfile.Data)<-c("Year",AnnualSoilProfile.Names); 
+#  Reading Column headers for the Annual Soil Outputs Data
 
 
+AnnualSoilOutputs.header<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Outputs", startRow = 5, endRow=8, header=F);
+
+# Composing and saving the daily ouptput column names
 
 
+AnnualSoilOutputsNames<-c(paste(AnnualSoilOutputs.header[1,],AnnualSoilOutputs.header[2,],AnnualSoilOutputs.header[3,],AnnualSoilOutputs.header[4,],sep="_"))   ;
 
 
+#  Create a storing file to accumulate the data of the files after processing
 
+AnnualSoilOutput.summary<-data.frame()  ;
 
-#  Reading data columns in each file of contained in the simulations directory
-
-
-#  Reading data columns in each file of contained in the simulations directory
 
 for (k in FileNames) {
      
+     # k=FileNames[1]
+     
+     ###############################################################################################################
+     #                                 Annual Soil Profile                                
+     ###############################################################################################################
+
+     #  Creating Coulmn header for layers
+
+     AnnualSoilProfile.2<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Profile", startRow = 4, endRow=5, header=F);
+
+
+     AnnualSoilProfile.Layers<-AnnualSoilProfile.2[,!is.na(AnnualSoilProfile.2[2,])] ;
+     
+     #Pasting the colum layers with the data classes to make the full column headers, ecluding the "Year" coulm header, the first column in the data      set
+
+     AnnualSoilProfile.Names<-paste(rep(AnnualSoilProfile.classes,each=(length(AnnualSoilProfile.Layers)-1)/length(levels(AnnualSoilProfile.classes))),AnnualSoilProfile.Layers[1,-1],AnnualSoilProfile.Layers[2,-1],sep="_")  ;
+
+     # Reading the data from the spreadsheet
+
+     AnnualSoilProfile.3<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Profile", startRow = 6, header=F);
+
+     # Eliminting blank columns form the data set
+     AnnualSoilProfile.Data<-AnnualSoilProfile.3[,!is.na(AnnualSoilProfile.3[1,])];
+     
+     #Adding the full column names to the data set
+
+     names(AnnualSoilProfile.Data)<-c("Year",AnnualSoilProfile.Names);
+     
+     # Calculating the Humidified carbon per year on the top four layers
+     
+     AnnualSoilProfile.Data$HumidifiedC_25<-AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 4_Mg C/ha")] ;
+     
+     
+     # Calculating the Initial soil carbon carbon per year on the top four layers
+     
+     AnnualSoilProfile.Data$InitialC_25<-AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 4_Mg C/ha")] ;
+     
+     
+     #  Calculating percent humidification per year in th top 4 layers
+     
+     AnnualSoilProfile.Data$HumidifiedC_25_percent<-AnnualSoilProfile.Data$HumidifiedC_25/AnnualSoilProfile.Data$InitialC_25  ;
+     
+     #  Adding the File Name 
+     
+     Original.File<-k ;
+     
+     AnnualSoilProfile.Data$File<-Original.File   ;
+     
+     
+     # # writting table with the summary
+     # 
+     # AnnualSoilProfile.Data,file="..\\Cycles_N2O_Rose_AnnualSoilProfile.csv", append=T, sep=",", row.names= T); 
+     # 
+    
+
+     # Write the results into the storing file
+
+      SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data)  ;   
+
+    # Remove the data to create space in memory
+     
+     
+      rm(AnnualSoilProfile.Data) ;
+     
+     
+     ###############################################################################################################
+     #                                 Annual Soil ouputs                              
+     ###############################################################################################################
+     
+     # Reading the data from the spreadsheet and adding column names
+     
+     AnnualSoilOutputs<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Outputs", startRow = 9, header=F);
+     
+
+     names(AnnualSoilOutputs)<-AnnualSoilOutputsNames ;
+     
+     
+     # Selecting the rows that do not have NA data in the Layer Thickness column
+     
+     AnnualSoilOutputs.1<-AnnualSoilOutputs[! is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ), ]    ;
+     
+     # Selecting the Layer number and transforming it into a factor
+     
+     AnnualSoilOutputs.Layers<-as.factor(AnnualSoilOutputs$`NA_NA_Year &_Layer #`[! is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ) ])  ;
+     
+     AnnualSoilOutputs.1$Layer<-AnnualSoilOutputs.Layers  ;
+     
+     # Selecting the Years and making a Year by selecting rows that have NA in the column NA_Layer_Thickness_m c
+     
+     AnnualSoilOutputs.Years<-AnnualSoilOutputs$`NA_NA_Year &_Layer #`[is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ) ]  ;
+     
+     # Add years as a factor
+     
+    
+     AnnualSoilOutputs.1$Year<-as.factor(rep(AnnualSoilOutputs.Years, each=length(levels(AnnualSoilOutputs.Layers)))) ;
+     
+     # Computing the layer thickness for each layer
+     
+     Layer.Depth<-AnnualSoilOutputs.1[1:length(levels(AnnualSoilOutputs.Layers)),c("Layer","NA_Layer_Thickness_m")];
+     
+     Zeros<-matrix(0,length(levels(AnnualSoilOutputs.Layers)),length(levels(AnnualSoilOutputs.Layers)))   ; #creating a zero square matrix of dimensions equal to the number of layers
+     
+     Zeros[lower.tri(Zeros, diag=T)]<-1  ; # filling the lower trinagular Zeros matrix with 1, including the diagaonal
+     
+     # Computing the layer depth by mutiplying the Zeros Matrix with the layer thickness values
+     
+     LayerDepth<-Zeros %*% AnnualSoilOutputs.1[1:length(levels(AnnualSoilOutputs.Layers)),c("NA_Layer_Thickness_m")] ;
+     
+     
+     #  Adding the File Name 
+     
+     Original.File<-k ;
+     
+     AnnualSoilProfile.Data$File<-Original.File   ;
+     
+     AnnualSoilOutputs<-cbind(AnnualSoilOutputs.1,LayerDepth,Original.File) ;
+
+
+     # # writting table with the summary
+     # 
+     # write.table(AnnualSoilOutputs,file="..\\Cycles_N2O_Rose_AnnualSoilOutputs.csv", append=T, sep=",", row.names= T); 
+     # 
+     
+     AnnualSoilOutput.summary<-rbind(AnnualSoilOutput.summary,AnnualSoilOutputs)  ;   
+     
+     rm(AnnualSoilOutputs) ;
      
 
 
+}
 
 
 
 
+
+###############################################################################################################
+#                          Organizing and producing the ouputs in an Excell Workbook                              
+###############################################################################################################
 
 
 
