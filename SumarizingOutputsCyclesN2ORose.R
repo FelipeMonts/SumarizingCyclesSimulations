@@ -117,7 +117,7 @@ SeasonColNames<-paste(SeasonOutput.header[1,],SeasonOutput.header[2,],SeasonOutp
 
 #  Create a storing file to accumulate the data of the files after processing
 
-Soil.Season.summary<-data.frame()  ;
+SeasonOutput.summary<-data.frame()  ;
 
 
 
@@ -144,23 +144,23 @@ for (i in FileNames) {
      Corn<-SeasonOutput[c(MaizeRows,MaizeRows-1),]  ;
      
      
-     # Adding the values in pounds per acre and bushels per acre
-     # Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
-     # http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
-     
-     Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
-     Mg_ha_to_lb_ac=1000*2.205/2.471
-
-     
-     Corn$`Grain_Yield_Bushel/ac`<-Corn$`Grain_Yield_Mg/ha` * Mg_ha_to_Bushels_ac ;
-     
-     Corn$`Forage_Yield_Bushel/ac`<-Corn$`Forage_Yield_Mg/ha` * Mg_ha_to_lb_ac ;
-     
-     Corn$`Total_Nitrogen_lb/ac`<-Corn$`Total_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
-     
-     Corn$`Root_Nitrogen_lb/ac`<-Corn$`Root_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
-     
-     Corn$`Grain_Nitrogen_lb/ac`<-Corn$`Grain_Nitrogen_Mg/ha` *  Mg_ha_to_lb_ac  ;
+     # # Adding the values in pounds per acre and bushels per acre
+     # # Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
+     # # http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
+     # 
+     # Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
+     # Mg_ha_to_lb_ac=1000*2.205/2.471
+     # 
+     # 
+     # Corn$`Grain_Yield_Bushel/ac`<-Corn$`Grain_Yield_Mg/ha` * Mg_ha_to_Bushels_ac ;
+     # 
+     # Corn$`Forage_Yield_Bushel/ac`<-Corn$`Forage_Yield_Mg/ha` * Mg_ha_to_lb_ac ;
+     # 
+     # Corn$`Total_Nitrogen_lb/ac`<-Corn$`Total_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
+     # 
+     # Corn$`Root_Nitrogen_lb/ac`<-Corn$`Root_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
+     # 
+     # Corn$`Grain_Nitrogen_lb/ac`<-Corn$`Grain_Nitrogen_Mg/ha` *  Mg_ha_to_lb_ac  ;
      
      # Adding the Water strees indicator based in potential and realized evapotranspiration
      # The Water Stress or water deficit indicator will be calculated as: 1-[Actual_Transpiration_mm / Potential_Transpiration_mm ]
@@ -179,7 +179,7 @@ for (i in FileNames) {
      
     # Write the results into the storing file
 
-    Soil.Season.summary<-rbind(Soil.Season.summary,Corn)    ;   
+    SeasonOutput.summary<-rbind(SeasonOutput.summary,Corn)    ;   
 
     # Remove the data to create space in memory
      
@@ -219,7 +219,7 @@ DailyColNames<-c(paste(DailyOutput.header[2,],DailyOutput.header[3,],DailyOutput
 
 #  Create a storing file to accumulate the data of the files after processing
 
-Soil.Daily.summary<-data.frame()  ;
+Daily.summary<-data.frame()  ;
 
 
 
@@ -282,7 +282,7 @@ for (j in FileNames) {
      
      # Adding Year to the grouping ot merge the rest of the data
      
-     DailyOutput.Maize.1$Year<-as.factor(row.names(DailyOutput.Maize))  ;   
+     DailyOutput.Maize.1$Year<-as.factor(row.names(DailyOutput.Maize.1))  ;   
      
      
 
@@ -316,12 +316,31 @@ for (j in FileNames) {
      RedClover.Rows<-DailyOutput[DailyOutput$`NA_Rotation_Stage_Crop Name` == c("Red Clover"),];
 
 
-     #   Selecting the maximum total crop N of red clover cover by year
+     # Selecting the last day of the year that RecClover was grown 
+     
+     RedClover.LastDay<-tapply(RedClover.Rows$NA_NA_NA_Day,RedClover.Rows$Year,max) ;
+     
+     Year.RedClover<-as.factor(row.names(RedClover.LastDay))  ;
+     
+     RedClover.Data<-data.frame(RedClover.LastDay, Year.RedClover,row.names = NULL) ;
+     
+     names(RedClover.Data)<-c("NA_NA_NA_Day","Year")   ;
+     
+     #select the rows of RedClover with the last day of RedClover in each year
+     
+     RedClover.LastDay.year<-merge(RedClover.Data, RedClover.Rows) ;
+     
+     # Selecting the Total Crop N for the last day of RedClover before corn
 
-     RedClover.TotalCropN<-tapply(RedClover.Rows$`Total_Crop_Nitrogen_kg N/ha`,RedClover.Rows$Year,max);
+     RedClover.TotalCropN<-RedClover.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
+     
+     
+      #   Selecting the maximum total crop N of red clover cover by year
 
-
-     #   Selecting Alfalfa rows in the outputs
+     RedClover.TotalCropN.1<-tapply(RedClover.Rows$`Total_Crop_Nitrogen_kg N/ha`,RedClover.Rows$Year,max);
+     
+     
+      #   Selecting Alfalfa rows in the outputs
 
      Alfalfa.Rows<-DailyOutput[DailyOutput$`NA_Rotation_Stage_Crop Name`== c("Alfalfa"),];
 
@@ -348,31 +367,26 @@ for (j in FileNames) {
 
      Alfalfa.TotalCropN<-Alfalfa.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
 
+     # Merge data from Alfalfa and RedClover
      
+     Alflafa.RedClover.summary<-merge(Alfalfa.TotalCropN,RedClover.TotalCropN, by.x="Year", by.y="Year", all=T) ;
+     
+     # Merge data from Corn, Alfalfa and RedClover
+     
+     DailyOutput.Summary<-merge(DailyOutput.Maize,Alflafa.RedClover.summary, by.x="Year", by.y="Year", all=T) ;
      
      
      #   Adding the file name to keep track
 
      Original.File<-j ;
 
+     DailyOutput.Summary$File<-Original.File ;
 
      # Sumarizing the results:
 
-     DailyOutput.Summary<-data.frame(Maize.NMineralization , Maize.NLeaching,Maize.NH4Volatilization , Maize.N2O_Denitification, Maize.N2O_Nitrification, Maize.NGaseousLosses , Maize.SoilOC.planting, RedClover.TotalCropN, Original.File) ;
-     
-     merge(DailyOutput.Summary,merge(Maize.SoilOC.Maturiy, Alfalfa.TotalCropN, by.x="Year", by.y="Year", all=T), by.x="Year", by.y="Year", all=T) 
-     
-     
-     
-     #Maize.SoilOC.Maturiy  Alfalfa.TotalCropN
-     
-     
-     
-     
+         # Write the results into the storing file
 
-     # Write the results into the storing file
-
-    Soil.Daily.summary<-rbind(Soil.Daily.summary,DailyOutput.Summary)    ;   
+    Daily.summary<-rbind(Daily.summary,DailyOutput.Summary)    ;   
 
     # Remove the data to create space in memory
      
@@ -433,7 +447,7 @@ for (k in FileNames) {
 
      #  Creating Coulmn header for layers
 
-     AnnualSoilProfile.2<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Profile", startRow = 4, endRow=5, header=F);
+     AnnualSoilProfile.2<-readWorksheetFromFile(k, sheet = "Annual Soil Profile", startRow = 4, endRow=5, header=F);
 
 
      AnnualSoilProfile.Layers<-AnnualSoilProfile.2[,!is.na(AnnualSoilProfile.2[2,])] ;
@@ -444,7 +458,7 @@ for (k in FileNames) {
 
      # Reading the data from the spreadsheet
 
-     AnnualSoilProfile.3<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Profile", startRow = 6, header=F);
+     AnnualSoilProfile.3<-readWorksheetFromFile(k, sheet = "Annual Soil Profile", startRow = 6, header=F);
 
      # Eliminting blank columns form the data set
      AnnualSoilProfile.Data<-AnnualSoilProfile.3[,!is.na(AnnualSoilProfile.3[1,])];
@@ -478,10 +492,6 @@ for (k in FileNames) {
 
       SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data)  ;   
 
-    # Remove the data to create space in memory
-     
-     
-      rm(AnnualSoilProfile.Data) ;
      
      
      ###############################################################################################################
@@ -490,7 +500,7 @@ for (k in FileNames) {
      
      # Reading the data from the spreadsheet and adding column names
      
-     AnnualSoilOutputs<-readWorksheetFromFile(FileNames[k], sheet = "Annual Soil Outputs", startRow = 9, header=F);
+     AnnualSoilOutputs<-readWorksheetFromFile(k, sheet = "Annual Soil Outputs", startRow = 9, header=F);
      
 
      names(AnnualSoilOutputs)<-AnnualSoilOutputsNames ;
@@ -545,6 +555,7 @@ for (k in FileNames) {
      
      rm(AnnualSoilOutputs) ;
      
+     rm(AnnualSoilProfile.Data)    ;
 
 
 }
@@ -558,6 +569,60 @@ for (k in FileNames) {
 ###############################################################################################################
 
 
+# Writting the results to their correponding spreadsheets
+
+
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput.summary, sheet="Season_Output")  ;
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary , sheet="Daily_Output")  ;
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", AnnualSoilOutput.summary, sheet="Soil_Output")  ;
+
+
+# Converting outputs to pounds per acre and bushels per acre
+
+
+# Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
+# http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
+     
+     Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
+     Mg_ha_to_lb_ac=1000*2.205/2.471
+
+# Season Output summary
+     
+     
+# Selecting the columns that need to be converted to pounds per acre 
+     
+Col.LbAc<-grepl("Mg/ha",names(SeasonOutput.summary)) & ! grepl("Grain_Yield",names(SeasonOutput.summary)); 
+
+# Converting the data from Mg/ha to lb,Ac
+
+SeasonOutput.summary.LbAc<-SeasonOutput.summary[,Col.LbAc]*Mg_ha_to_lb_ac ;
+
+# Changing the names of the columns
+
+names(SeasonOutput.summary.LbAc)<-sub("Mg/ha","lb/Ac",names(SeasonOutput.summary.LbAc))  ;
+     
+
+     
+# Selecting the columns that need to be converted to bushels per acre   
+
+Col.BuAc<-grepl("Grain_Yield",names(SeasonOutput.summary))  ; 
+
+# Converting the data from Mg/ha to Bu,Ac
+
+SeasonOutput.summary.BuAc<-data.frame(SeasonOutput.summary[,Col.BuAc]*Mg_ha_to_Bushels_ac)  ; 
+
+# Changing the names of the columns
+
+names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels/Ac" ;
+
+
+# Putting all the columns back together
+
+
+SeasonOutput.summary.LbBuAc<-data.frame(SeasonOutput.summary[,!(Col.LbAc | Col.BuAc)],SeasonOutput.summary.BuAc,SeasonOutput.summary.LbAc);
 
 
 
@@ -566,6 +631,5 @@ for (k in FileNames) {
 
 
 
-
-
-
+    
+     
