@@ -37,14 +37,6 @@
 
 
 
-# To Do:
-#      chaging names of daily ouptut variables to include units
-#      Add columns with british units
-
-
-
-
-
 
 ###############################################################################################################
 #                          Loading Packages and setting up working directory                        
@@ -188,11 +180,11 @@ for (i in FileNames) {
      
 }
 
+#  Remove objects to free memory space
+
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary") ])
 
 
-# Remove objects to open memory space
-     
-rm(Corn,SeasonOutput.header) ;
 
 
 ###############################################################################################################
@@ -253,32 +245,33 @@ for (j in FileNames) {
 
      #   Calculating Net Mineralization in Corn
 
-     Maize.NMineralization<-tapply(Maize.Rows$"Nitrogen_Net_Mineralization_kg N/ha",Maize.Rows$Year,sum);
+     `Maize.NMineralization_kg/ha`<-tapply(Maize.Rows$"Nitrogen_Net_Mineralization_kg N/ha",Maize.Rows$Year,sum);
 
 
      #   Nitrogen leaching during corn planting
 
-     Maize.NLeaching<-tapply(Maize.Rows$"NA_Nitrate_Leaching_kg N/ha",Maize.Rows$Year,sum);
+    `Maize.N_Leaching_kg/ha`<-tapply(Maize.Rows$"NA_Nitrate_Leaching_kg N/ha",Maize.Rows$Year,sum);
 
-     Maize.NH4Volatilization<-tapply(Maize.Rows$"NA_Ammonia_Volatilization_kg N/ha",Maize.Rows$Year,sum);
+    `Maize.NH4_N_Volatilization_kg/ha`<-tapply(Maize.Rows$"NA_Ammonia_Volatilization_kg N/ha",Maize.Rows$Year,sum);
 
-     Maize.N2O_Denitification<-tapply(Maize.Rows$"Nitrous Oxide_from_Denitrification_kg N/ha",Maize.Rows$Year,sum);
+    `Maize.NH4_N_Volatilization_kg/ha`<-tapply(Maize.Rows$"Nitrous Oxide_from_Denitrification_kg N/ha",Maize.Rows$Year,sum);
      
-     Maize.N2O_Nitrification<-tapply(Maize.Rows$"Nitrous Oxide_from_Nitrification_kg N/ha",Maize.Rows$Year,sum);
+    `Maize.N2O_Nitrification_kg/ha`<-tapply(Maize.Rows$"Nitrous Oxide_from_Nitrification_kg N/ha",Maize.Rows$Year,sum);
 
-     Maize.NGaseousLosses<-Maize.NH4Volatilization + Maize.N2O_Denitification + Maize.N2O_Nitrification;
+    `Maize.N_GaseousLosses_kg/ha`<-`Maize.NH4_N_Volatilization_kg/ha` + `Maize.NH4_N_Volatilization_kg/ha` + `Maize.N2O_Nitrification_kg/ha`;
 
      #  Soil Health During Corn
 
-     Maize.SoilOC.planting<-tapply(Maize.Rows$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows$Year,max);
+    `Maize.SoilOC.planting_Mg/ha`<-tapply(Maize.Rows$`Soil_Organic_Carbon_Mg/ha`,Maize.Rows$Year,max);
      
-     Maize.Residue.Resp<-tapply(Maize.Rows$"Residue_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
+    `Maize.Residue.C_Resp_Mg/ha`<-tapply(Maize.Rows$"Residue_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
      
-     Maize.SOM.Resp<-tapply(Maize.Rows$"SOM_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
+    `Maize.SOM.C_Resp_Mg/ha`<-tapply(Maize.Rows$"SOM_Respired_Carbon_Mg/ha",Maize.Rows$Year,sum);
      
-     #Grouping the data
+     # Grouping the data
+    
      
-     DailyOutput.Maize.1<-data.frame(Maize.NMineralization , Maize.NLeaching , Maize.NH4Volatilization , Maize.N2O_Denitification , Maize.N2O_Nitrification , Maize.NGaseousLosses , Maize.SoilOC.planting) ;
+     DailyOutput.Maize.1<-data.frame(`Maize.NMineralization_kg/ha` , `Maize.N_Leaching_kg/ha` , `Maize.NH4_N_Volatilization_kg/ha` , `Maize.N2O_N_Denitification_kg/ha`, `Maize.N2O_Nitrification_kg/ha` , `Maize.N_GaseousLosses_kg/ha` , `Maize.SoilOC.planting_Mg/ha`, `Maize.Residue.C_Resp_Mg/ha`, `Maize.SOM.C_Resp_Mg/ha`)   ;
      
      # Adding Year to the grouping ot merge the rest of the data
      
@@ -301,11 +294,11 @@ for (j in FileNames) {
 
      # Selectimg the Soil Organic carbon during the last day corn is growing in each year
 
-     Maize.SoilOC.Maturiy<-Maize.LastDay.year[,c("Year","Soil_Organic_Carbon_Mg/ha")]; 
+     `Maize.SoilOC.Maturiy_Mg/ha`<-Maize.LastDay.year[,c("Year","Soil_Organic_Carbon_Mg/ha")]; 
      
      # Merge Maize.SoilOC.Maturiy with the rest of the data
      
-     DailyOutput.Maize<-merge(DailyOutput.Maize.1,Maize.SoilOC.Maturiy, by.x="Year", by.y="Year",all=T);
+     DailyOutput.Maize<-merge(DailyOutput.Maize.1,`Maize.SoilOC.Maturiy_Mg/ha`, by.x="Year", by.y="Year",all=T);
      
 
      
@@ -332,7 +325,7 @@ for (j in FileNames) {
      
      # Selecting the Total Crop N for the last day of RedClover before corn
 
-     RedClover.TotalCropN<-RedClover.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
+     `RedClover.TotalCropN_kg/ha`<-RedClover.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
      
      
       #   Selecting the maximum total crop N of red clover cover by year
@@ -365,11 +358,11 @@ for (j in FileNames) {
      
      # Selecting the Total Crop N for the last day of alfalfa before corn
 
-     Alfalfa.TotalCropN<-Alfalfa.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
+     `Alfalfa.TotalCropN_kg/ha`<-Alfalfa.LastDay.year[,c("Year","NA_NA_NA_Day","Total_Crop_Nitrogen_kg N/ha")] ;
 
      # Merge data from Alfalfa and RedClover
      
-     Alflafa.RedClover.summary<-merge(Alfalfa.TotalCropN,RedClover.TotalCropN, by.x="Year", by.y="Year", all=T) ;
+     Alflafa.RedClover.summary<-merge(`Alfalfa.TotalCropN_kg/ha`,`RedClover.TotalCropN_kg/ha`, by.x="Year", by.y="Year", all=T) ;
      
      # Merge data from Corn, Alfalfa and RedClover
      
@@ -396,7 +389,9 @@ for (j in FileNames) {
 }
 
 
-rm(DailyOutput.Summary,DailyOutput.header) ;
+#  Remove objects to free memory space
+
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary","Daily.summary") ])
 
 
 
@@ -435,6 +430,7 @@ AnnualSoilOutputsNames<-c(paste(AnnualSoilOutputs.header[1,],AnnualSoilOutputs.h
 #  Create a storing file to accumulate the data of the files after processing
 
 AnnualSoilOutput.summary<-data.frame()  ;
+
 
 
 for (k in FileNames) {
@@ -560,7 +556,9 @@ for (k in FileNames) {
 
 }
 
+#  Remove objects to free memory space
 
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary","Daily.summary","AnnualSoilOutput.summary") ])
 
 
 
@@ -625,11 +623,19 @@ names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels/Ac" ;
 SeasonOutput.summary.LbBuAc<-data.frame(SeasonOutput.summary[,!(Col.LbAc | Col.BuAc)],SeasonOutput.summary.BuAc,SeasonOutput.summary.LbAc);
 
 
+#  Daily.summary
 
+# Selecting the columns that need to be converted to pounds per acre 
+     
+Col.LbAc<-grepl("Mg/ha",names(Daily.summary)) & ! grepl("Grain_Yield",names(Daily.summary)) ; 
 
+# Converting the data from Mg/ha to lb,Ac
 
+Daily.summary.LbAc<-data.frame(Daily.summary[,Col.LbAc]*Mg_ha_to_lb_ac);
 
+# Changing the names of the columns
 
+names(Daily.summary.LbAc)<-sub("Mg/ha","lb/Ac",names(Daily.summary.LbAc))  ;
 
     
      
