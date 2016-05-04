@@ -1,38 +1,12 @@
 
-#####     Extracting Nitrogen Daily outputs for Corn#  Felipe Montes
-#  2016 02 15
-#  Program to extract and average outputs from N2O Rose Simulations by Dr. Saha.
+##############################################################################################################################
+#
+#  Program to extract and summarize outputs from N2O Rose Simulations by Dr. Saha.
+#
+#  Felipe Montes,  2016/05/03
+#
+##############################################################################################################################
 
-#  2016 03 21
-#  Added small program to convert column names in excell (A,B,C,D....AD, AE...) into column numbers for selection in R (1,2,3,4, ....)
-#  Continue working on sumarizing the necesary daily outputs 
-#  2016 03 22 Added the selection of transitions rows between crops and fallow
-
-#  2016 03 23
-#  Abandon the fallow row selection approach as it was getting too complicated and not getting the desired results
-#  The approach using now is to select all the daily aoutput rows for Maize, Red Clover and Alfalfa, and work with them
-
-#  2016 03 30 
-#  Working on adding year to the season output
-#  Add N2 to the gasous losses
-#  Nitrogen synchrony from cover crop to the crop /or Manure application
-#  Adding Outputs in pounds per acre and Bushels per acre
-#  Temperature, drought and precipitation indices also need to be added
-
-
-#  2016 04 12
-
-# Added water deficit based on seasonal output for potential and realized evapotranspiration
-# Added Potential Transpiration (Column J) and actual Transpiration (cloumn K) from the Season Outputs to get at the water stress
-# Added Forage yield column
-# Changeds the name of the variables back to the defoult original to make it easier to add an change variables
-
-
-#2016 04 20
-
-# Improved code ouptut and comments  structure
-# Created a new directory to summarize outputs
-# Added a collection file to store all the results and then process it into an excell work book
 
 
 
@@ -57,7 +31,11 @@ setwd("C:\\Felipe\\OrganicTransitions_N2OROSE\\CyclesSimulation\\SahaN2ORoseSimu
 #  Inlcude the necesary packages
 
 library(lattice); 
-options(java.parameters = "-Xmx4g" );
+
+options(java.parameters = "-Xmx4g" ); 
+
+#  options(java.parameters = "-Xmx1024m" );
+
 library(XLConnect);
 
 
@@ -372,7 +350,7 @@ for (j in FileNames) {
      
      # Merge data from Corn, Alfalfa and RedClover
      
-     DailyOutput.Summary<-merge(DailyOutput.Maize,Alflafa.RedClover.summary, by="Year", all=T) ;
+     DailyOutput.Summary<-merge(DailyOutput.Maize,Alfalfa.RedClover.summary, by="Year", all=T) ;
      
      
      #   Adding the file name to keep track
@@ -422,23 +400,6 @@ AnnualSoilProfile.classes<-as.factor(AnnualSoilProfile.1[!is.na(AnnualSoilProfil
 SoilProfile.summary<-data.frame()  ;
 
 
-#  Reading Column headers for the Annual Soil Outputs Data
-
-
-AnnualSoilOutputs.header<-readWorksheetFromFile(FileNames[1], sheet = "Annual Soil Outputs", startRow = 5, endRow=8, header=F);
-
-# Composing and saving the daily ouptput column names
-
-
-AnnualSoilOutputsNames<-c(paste(AnnualSoilOutputs.header[1,],AnnualSoilOutputs.header[2,],AnnualSoilOutputs.header[3,],AnnualSoilOutputs.header[4,],sep="_"))   ;
-
-
-#  Create a storing file to accumulate the data of the files after processing
-
-AnnualSoilOutput.summary<-data.frame()  ;
-
-
-
 for (k in FileNames) {
      
      # k=FileNames[1]
@@ -471,15 +432,15 @@ for (k in FileNames) {
      
      # Calculating the Humidified carbon per year on the top four layers
      
-     AnnualSoilProfile.Data$HumidifiedC_25<-AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 4_Mg C/ha")] ;
+     AnnualSoilProfile.Data$`HumidifiedC_25_Mg C/ha`<-AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 4_Mg C/ha")] ;
      
      
      # Calculating the Initial soil carbon carbon per year on the top four layers
      
-     AnnualSoilProfile.Data$InitialC_25<-AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 4_Mg C/ha")] ;
+     AnnualSoilProfile.Data$`InitialC_25_Mg C/ha`<-AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 4_Mg C/ha")] ;
      
      
-     #  Calculating percent humidification per year in th top 4 layers
+     #  Calculating percent humidification per year in the top 4 layers
      
      AnnualSoilProfile.Data$HumidifiedC_25_percent<-AnnualSoilProfile.Data$HumidifiedC_25/AnnualSoilProfile.Data$InitialC_25  ;
      
@@ -492,73 +453,9 @@ for (k in FileNames) {
      
      # Write the results into the storing file
 
-      SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data)  ;   
+      SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data[,c( 'Year','HumidifiedC_25_Mg C/ha', 'InitialC_25_Mg C/ha', 'HumidifiedC_25_percent','File')])  ;   
 
-     
-     
-     ###############################################################################################################
-     #                                 Annual Soil ouputs                              
-     ###############################################################################################################
-     
-     # Reading the data from the spreadsheet and adding column names
-     
-     AnnualSoilOutputs<-readWorksheetFromFile(k, sheet = "Annual Soil Outputs", startRow = 9, header=F);
-     
-
-     names(AnnualSoilOutputs)<-AnnualSoilOutputsNames ;
-     
-     
-     # Selecting the rows that do not have NA data in the Layer Thickness column
-     
-     AnnualSoilOutputs.1<-AnnualSoilOutputs[! is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ), ]    ;
-     
-     # Selecting the Layer number and transforming it into a factor
-     
-     AnnualSoilOutputs.Layers<-as.factor(AnnualSoilOutputs$`NA_NA_Year &_Layer #`[! is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ) ])  ;
-     
-     AnnualSoilOutputs.1$Layer<-AnnualSoilOutputs.Layers  ;
-     
-     # Selecting the Years and making a Year by selecting rows that have NA in the column NA_Layer_Thickness_m c
-     
-     AnnualSoilOutputs.Years<-AnnualSoilOutputs$`NA_NA_Year &_Layer #`[is.na(AnnualSoilOutputs$NA_Layer_Thickness_m ) ]  ;
-     
-     # Add years as a factor
-     
-    
-     AnnualSoilOutputs.1$Year<-as.factor(rep(AnnualSoilOutputs.Years, each=length(levels(AnnualSoilOutputs.Layers)))) ;
-     
-     # Computing the layer thickness for each layer
-     
-     Layer.Depth<-AnnualSoilOutputs.1[1:length(levels(AnnualSoilOutputs.Layers)),c("Layer","NA_Layer_Thickness_m")];
-     
-     Zeros<-matrix(0,length(levels(AnnualSoilOutputs.Layers)),length(levels(AnnualSoilOutputs.Layers)))   ; #creating a zero square matrix of dimensions equal to the number of layers
-     
-     Zeros[lower.tri(Zeros, diag=T)]<-1  ; # filling the lower trinagular Zeros matrix with 1, including the diagaonal
-     
-     # Computing the layer depth by mutiplying the Zeros Matrix with the layer thickness values
-     
-     LayerDepth<-Zeros %*% AnnualSoilOutputs.1[1:length(levels(AnnualSoilOutputs.Layers)),c("NA_Layer_Thickness_m")] ;
-     
-     
-     #  Adding the File Name 
-     
-     Original.File<-k ;
-     
-     AnnualSoilProfile.Data$File<-Original.File   ;
-     
-     AnnualSoilOutputs<-cbind(AnnualSoilOutputs.1,LayerDepth,Original.File) ;
-     
-
-    # Write the results into the storing file
-
-     AnnualSoilOutput.summary<-rbind(AnnualSoilOutput.summary,AnnualSoilOutputs)  ; 
-     
-   # Remove the data to create space in memory
-     
-     rm(AnnualSoilOutputs) ;
-     
-     rm(AnnualSoilProfile.Data)    ;
-
+   
 
 }
 
@@ -581,7 +478,7 @@ writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput
 
 writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary , sheet="Daily_Output")  ;
 
-writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", AnnualSoilOutput.summary, sheet="Soil_Output")  ;
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SoilProfile.summary, sheet="Soil_Output")  ;
 
 
 # Converting outputs to pounds per acre and bushels per acre
@@ -609,7 +506,7 @@ SeasonOutput.summary.LbAc<-SeasonOutput.summary[,Col.LbAc]*Mg_ha_to_lb_ac ;
 
 # Changing the names of the columns
 
-names(SeasonOutput.summary.LbAc)<-sub("Mg/ha","lb\/\Ac",names(SeasonOutput.summary.LbAc))  ;
+names(SeasonOutput.summary.LbAc)<-sub("Mg/ha","lb_Ac",names(SeasonOutput.summary.LbAc))  ;
      
 
      
@@ -623,7 +520,7 @@ SeasonOutput.summary.BuAc<-data.frame(SeasonOutput.summary[,Col.BuAc]*Mg_ha_to_B
 
 # Changing the names of the columns
 
-names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels/Ac" ;
+names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels_Ac" ;
 
 
 # Putting all the columns back together
@@ -650,7 +547,7 @@ Daily.summary.MghaLbAc<-data.frame(Daily.summary[,ColMgha.LbAc]*Mg_ha_to_lb_ac);
 
 # Changing the names of the columns
 
-names(Daily.summary.MghaLbAc)<-sub("Mg_ha","lb_Ac",names(Daily.summary.LbAc))  ;
+names(Daily.summary.MghaLbAc)<-sub("Mg_ha","lb_Ac",names(Daily.summary.MghaLbAc))  ;
 
 
 
@@ -668,6 +565,38 @@ names(Daily.summary.kghaLbAc)<-sub("kg_ha","lb_Ac",names(Daily.summary.kghaLbAc)
 
 # Putting all the columns back together
 
-Daily.summary.LbBuAc<-data.frame(Daily.summary[,!(ColMgha.LbAc | Colkgha.LbAc)],Daily.summary.MghaLbAc,Daily.summary.kghaLbAc);
-    
+Daily.summary.LbBuAc<-data.frame(Daily.summary[,!(ColMgha.LbAc | Colkgha.LbAc)],Daily.summary.MghaLbAc,Daily.summary.kghaLbAc)  ;
+
+
+# Writing the  data to the spreadsheet
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary.LbBuAc, sheet="Daily_OutputLbBuAc")  ;
+
+
+
+#######################
+
+#  SoilProfile.summary
+
+# Selecting the columns that need to be converted from Mg/ha to pounds per acre 
+     
+SoilColMgha.LbAc<-grepl("Mg/ha",names(SoilProfile.summary)) ; 
+
+SoilColMgCha.LbAc<-grepl("Mg C/ha",names(SoilProfile.summary)) ; 
+
+# Converting the data from Mg/ha to lb,Ac
+
+SoilProfile.summary.LbAc<-data.frame(SoilProfile.summary[,SoilColMgha.LbAc]*Mg_ha_to_lb_ac);
+
+SoilProfile.summary.LbAc<-data.frame(SoilProfile.summary[,SoilColMgCha.LbAc]*Mg_ha_to_lb_ac)  ;
+
+# Changing the names of the columns
+
+names(SoilProfile.summary.LbAc)<-sub("Mg/ha","lb_Ac",names(SoilProfile.summary.LbAc))  ;
+
+names(SoilProfile.summary.LbAc)<-sub("Mg C/ha","lb_Ac",names(SoilProfile.summary.LbAc))  ;
+
+
+
+
      
