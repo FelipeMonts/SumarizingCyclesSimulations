@@ -63,6 +63,24 @@ dir.create("..\\OutputSummary");
 Excel.Columns<-c(LETTERS, paste0("A",LETTERS),paste0("B",LETTERS),paste0("C",LETTERS));
 
 
+
+###############################################################################################################
+#                         Conversion of from Si to pounds per acre and bushels per acre             
+###############################################################################################################
+
+
+# Converting outputs to pounds per acre and bushels per acre
+
+
+# Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
+# http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
+     
+     Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
+     Mg_ha_to_lb_ac=1000*2.205/2.471
+     kg_ha_to_lb_ac=2.205/2.471
+
+
+
 ###############################################################################################################
 #                          Starting Season Outputs data query                                   
 ###############################################################################################################
@@ -153,15 +171,67 @@ for (i in FileNames) {
 
     # Remove the data to create space in memory
      
+    rm(SeasonOutput)  ; 
      
-     rm(SeasonOutput)
+    gc() ;
      
 }
 
+
+# Writting the results to the summary spreadsheet
+
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput.summary, sheet="Season_Output")  ;
+
+
+
+###########Converting Outputs from SI to Bushels, Pounds, Acre     
+
+     
+# Selecting the columns that need to be converted to pounds per acre 
+     
+Col.LbAc<-grepl("Mg/ha",names(SeasonOutput.summary)) & ! grepl("Grain_Yield",names(SeasonOutput.summary)); 
+
+# Converting the data from Mg/ha to lb,Ac
+
+SeasonOutput.summary.LbAc<-SeasonOutput.summary[,Col.LbAc]*Mg_ha_to_lb_ac ;
+
+# Changing the names of the columns
+
+names(SeasonOutput.summary.LbAc)<-sub("Mg/ha","lb_Ac",names(SeasonOutput.summary.LbAc))  ;
+     
+
+     
+# Selecting the columns that need to be converted to bushels per acre   
+
+Col.BuAc<-grepl("Grain_Yield",names(SeasonOutput.summary))  ; 
+
+# Converting the data from Mg/ha to Bu,Ac
+
+SeasonOutput.summary.BuAc<-data.frame(SeasonOutput.summary[,Col.BuAc]*Mg_ha_to_Bushels_ac)  ; 
+
+# Changing the names of the columns
+
+names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels_Ac" ;
+
+
+# Putting all the columns back together
+
+
+SeasonOutput.summary.LbBuAc<-data.frame(SeasonOutput.summary[,!(Col.LbAc | Col.BuAc)],SeasonOutput.summary.BuAc,SeasonOutput.summary.LbAc);
+
+# Writing the  data to the spreadsheet
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput.summary.LbBuAc, sheet="Season_OutputLbBuAc")  ;
+
+
+
 #  Remove objects to free memory space
 
-rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary") ])
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","Mg_ha_to_Bushels_ac","Mg_ha_to_lb_ac","kg_ha_to_lb_ac") ])  ;
 
+
+gc(verbose=T);
 
 
 
@@ -370,13 +440,65 @@ for (j in FileNames) {
      
      rm(DailyOutput) ;
      
+     gc() ;
+     
 }
+
+
+
+# Writting the results to the summary spreadsheet
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary , sheet="Daily_Output")  ;
+
+
+
+###########Converting Outputs from SI to Bushels, Pounds, Acre     
+
+
+# Selecting the columns that need to be converted from Mg/ha to pounds per acre 
+     
+ColMgha.LbAc<-grepl("Mg_ha",names(Daily.summary)) ; 
+
+# Converting the data from Mg/ha to lb,Ac
+
+Daily.summary.MghaLbAc<-data.frame(Daily.summary[,ColMgha.LbAc]*Mg_ha_to_lb_ac);
+
+# Changing the names of the columns
+
+names(Daily.summary.MghaLbAc)<-sub("Mg_ha","lb_Ac",names(Daily.summary.MghaLbAc))  ;
+
+
+# Selecting the columns that need to be converted from Kg/ha to pounds per acre 
+     
+Colkgha.LbAc<-grepl("kg_ha",names(Daily.summary)) ;
+
+# Converting the data from Kg/ha to lb,Ac
+
+Daily.summary.kghaLbAc<-data.frame(Daily.summary[,Colkgha.LbAc]*kg_ha_to_lb_ac);
+
+# Changing the names of the columns
+
+names(Daily.summary.kghaLbAc)<-sub("kg_ha","lb_Ac",names(Daily.summary.kghaLbAc))  ;
+
+# Putting all the columns back together
+
+Daily.summary.LbBuAc<-data.frame(Daily.summary[,!(ColMgha.LbAc | Colkgha.LbAc)],Daily.summary.MghaLbAc,Daily.summary.kghaLbAc)  ;
+
+
+# Writing the  data to the spreadsheet
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary.LbBuAc, sheet="Daily_OutputLbBuAc")  ;
+
+
+
 
 
 #  Remove objects to free memory space
 
-rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary","Daily.summary") ])
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","Mg_ha_to_Bushels_ac","Mg_ha_to_lb_ac","kg_ha_to_lb_ac") ])  ;
 
+
+gc(verbose=T) ;
 
 
 ###############################################################################################################
@@ -432,12 +554,12 @@ for (k in FileNames) {
      
      # Calculating the Humidified carbon per year on the top four layers
      
-     AnnualSoilProfile.Data$`HumidifiedC_25_Mg C/ha`<-AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 4_Mg C/ha")] ;
+     AnnualSoilProfile.Data$`HumidifiedC_25_Mg_C_ha`<-AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Humified Carbon Mass_Layer 4_Mg C/ha")] ;
      
      
      # Calculating the Initial soil carbon carbon per year on the top four layers
      
-     AnnualSoilProfile.Data$`InitialC_25_Mg C/ha`<-AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 4_Mg C/ha")] ;
+     AnnualSoilProfile.Data$`InitialC_25_Mg_C_ha`<-AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 1_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 2_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 3_Mg C/ha")] + AnnualSoilProfile.Data[,c("Initial Carbon Mass_Layer 4_Mg C/ha")] ;
      
      
      #  Calculating percent humidification per year in the top 4 layers
@@ -453,148 +575,61 @@ for (k in FileNames) {
      
      # Write the results into the storing file
 
-      SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data[,c( 'Year','HumidifiedC_25_Mg C/ha', 'InitialC_25_Mg C/ha', 'HumidifiedC_25_percent','File')])  ;   
+      SoilProfile.summary<-rbind(SoilProfile.summary,AnnualSoilProfile.Data[,c( 'Year','HumidifiedC_25_Mg_C_ha', 'InitialC_25_Mg_C_ha', 'HumidifiedC_25_percent','File')])  ;   
 
-   
+    rm( AnnualSoilProfile.2 , AnnualSoilProfile.3 , AnnualSoilProfile.Data ) ;
+      
+    gc() ;
 
 }
 
-#  Remove objects to free memory space
 
-rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","SeasonOutput.summary","Daily.summary","AnnualSoilOutput.summary") ])
-
-
-
-###############################################################################################################
-#                          Organizing and producing the ouputs in an Excell Workbook                              
-###############################################################################################################
-
-
-# Writting the results to their correponding spreadsheets
-
-
-
-writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput.summary, sheet="Season_Output")  ;
-
-writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary , sheet="Daily_Output")  ;
+# Writting the results to the summary spreadsheet
 
 writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SoilProfile.summary, sheet="Soil_Output")  ;
 
 
-# Converting outputs to pounds per acre and bushels per acre
 
-
-# Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
-# http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
-     
-     Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
-     Mg_ha_to_lb_ac=1000*2.205/2.471
-     kg_ha_to_lb_ac=2.205/2.471
-
-     
-###########################     
-# Season Output summary
-     
-     
-# Selecting the columns that need to be converted to pounds per acre 
-     
-Col.LbAc<-grepl("Mg/ha",names(SeasonOutput.summary)) & ! grepl("Grain_Yield",names(SeasonOutput.summary)); 
-
-# Converting the data from Mg/ha to lb,Ac
-
-SeasonOutput.summary.LbAc<-SeasonOutput.summary[,Col.LbAc]*Mg_ha_to_lb_ac ;
-
-# Changing the names of the columns
-
-names(SeasonOutput.summary.LbAc)<-sub("Mg/ha","lb_Ac",names(SeasonOutput.summary.LbAc))  ;
-     
-
-     
-# Selecting the columns that need to be converted to bushels per acre   
-
-Col.BuAc<-grepl("Grain_Yield",names(SeasonOutput.summary))  ; 
-
-# Converting the data from Mg/ha to Bu,Ac
-
-SeasonOutput.summary.BuAc<-data.frame(SeasonOutput.summary[,Col.BuAc]*Mg_ha_to_Bushels_ac)  ; 
-
-# Changing the names of the columns
-
-names(SeasonOutput.summary.BuAc)<-"Grain_Yield_Bushels_Ac" ;
-
-
-# Putting all the columns back together
-
-
-SeasonOutput.summary.LbBuAc<-data.frame(SeasonOutput.summary[,!(Col.LbAc | Col.BuAc)],SeasonOutput.summary.BuAc,SeasonOutput.summary.LbAc);
-
-# Writing the  data to the spreadsheet
-
-writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SeasonOutput.summary.LbBuAc, sheet="Season_OutputLbBuAc")  ;
-
-#######################
-
-#  Daily.summary
+###########Converting Outputs from SI to Bushels, Pounds, Acre 
 
 
 # Selecting the columns that need to be converted from Mg/ha to pounds per acre 
      
-ColMgha.LbAc<-grepl("Mg_ha",names(Daily.summary)) ; 
+SoilColMgCha.LbAc<-grepl("Mg_C_ha",names(SoilProfile.summary)) ; 
+
 
 # Converting the data from Mg/ha to lb,Ac
-
-Daily.summary.MghaLbAc<-data.frame(Daily.summary[,ColMgha.LbAc]*Mg_ha_to_lb_ac);
-
-# Changing the names of the columns
-
-names(Daily.summary.MghaLbAc)<-sub("Mg_ha","lb_Ac",names(Daily.summary.MghaLbAc))  ;
-
-
-
-# Selecting the columns that need to be converted from Kg/ha to pounds per acre 
-     
-Colkgha.LbAc<-grepl("kg_ha",names(Daily.summary)) ;
-
-# Converting the data from Kg/ha to lb,Ac
-
-Daily.summary.kghaLbAc<-data.frame(Daily.summary[,Colkgha.LbAc]*kg_ha_to_lb_ac);
-
-# Changing the names of the columns
-
-names(Daily.summary.kghaLbAc)<-sub("kg_ha","lb_Ac",names(Daily.summary.kghaLbAc))  ;
-
-# Putting all the columns back together
-
-Daily.summary.LbBuAc<-data.frame(Daily.summary[,!(ColMgha.LbAc | Colkgha.LbAc)],Daily.summary.MghaLbAc,Daily.summary.kghaLbAc)  ;
-
-
-# Writing the  data to the spreadsheet
-
-writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", Daily.summary.LbBuAc, sheet="Daily_OutputLbBuAc")  ;
-
-
-
-#######################
-
-#  SoilProfile.summary
-
-# Selecting the columns that need to be converted from Mg/ha to pounds per acre 
-     
-SoilColMgha.LbAc<-grepl("Mg/ha",names(SoilProfile.summary)) ; 
-
-SoilColMgCha.LbAc<-grepl("Mg C/ha",names(SoilProfile.summary)) ; 
-
-# Converting the data from Mg/ha to lb,Ac
-
-SoilProfile.summary.LbAc<-data.frame(SoilProfile.summary[,SoilColMgha.LbAc]*Mg_ha_to_lb_ac);
 
 SoilProfile.summary.LbAc<-data.frame(SoilProfile.summary[,SoilColMgCha.LbAc]*Mg_ha_to_lb_ac)  ;
 
 # Changing the names of the columns
 
-names(SoilProfile.summary.LbAc)<-sub("Mg/ha","lb_Ac",names(SoilProfile.summary.LbAc))  ;
 
-names(SoilProfile.summary.LbAc)<-sub("Mg C/ha","lb_Ac",names(SoilProfile.summary.LbAc))  ;
+names(SoilProfile.summary.LbAc)<-sub("Mg_C_ha","lb_Ac",names(SoilProfile.summary.LbAc))  ;
+
+
+
+
+# Putting all the columns back together
+
+SoilProfile.summary.LbAc<-data.frame(SoilProfile.summary[,!SoilColMgCha.LbAc],SoilProfile.summary.LbAc)  ;
+
+
+# Writing the  data to the spreadsheet
+
+writeWorksheetToFile("..\\OutputSummary\\CyclesOutputSummary.xlsx", SoilProfile.summary.LbAc, sheet="Soil_OutputLbBuAc")  ;
+
+
+
+
+#  Remove objects to free memory space
+
+rm(list=ls()[!ls() %in%  c("Excel.Columns","FileNames","Mg_ha_to_Bushels_ac","Mg_ha_to_lb_ac","kg_ha_to_lb_ac") ])  ;
+
+
+gc(verbose=T)   ;
+
+
 
 
 
