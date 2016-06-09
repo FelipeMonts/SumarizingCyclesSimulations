@@ -55,9 +55,15 @@ dir.create("..\\OutputSummary\\Graphics");
 Excel.Columns<-c(LETTERS, paste0("A",LETTERS),paste0("B",LETTERS),paste0("C",LETTERS));
 
 
+###############################################################################################################
+#                        Code to plot the roation system used in the simulations
+###############################################################################################################
+
+
+
 
 ###############################################################################################################
-#  Code to plot the relationship between cover crop Biomass before planting and Transpiration
+#              Code to plot the relationship between cover crop Biomass before planting and Transpiration
 ###############################################################################################################
 
 
@@ -121,8 +127,12 @@ points(Alfalfa.Season_Output$Actual_Transpiration_mm,Alfalfa.Season_Output$Above
 Alfalfa.Season_Output<-Alfalfa.Season_Output[order(Alfalfa.Season_Output$NA_NA_Date),];
 
 
-### Plot Time series of nitrogen
+### Plot Time series of nitrogen in a PDF file
 
-barplot(t(as.matrix(Alfalfa.Season_Output[,c("Total_Nitrogen_Mg.ha","Root_Nitrogen_Mg.ha","Root_Nitrogen_Mg.ha")])),names.arg=Alfalfa.Season_Output$Year,legend.text = T) ;
+pdf(file="..\\OutputSummary\\Graphics\\Alfalfa_RootForageN.pdf",onefile=T,title=Alfalfa_RootForageN, width=10.5, height=8.0) ;
 
+Alfalfa_RootForageN<-barplot(t(as.matrix(Alfalfa.Season_Output[,c("Root_Nitrogen_Mg.ha","Forage_Nitrogen_Mg.ha")])),names.arg=Alfalfa.Season_Output$Year,legend.text = T,col=c("chocolate4","darkgreen")) ;
+
+
+dev.off()
 
