@@ -1,7 +1,7 @@
 
 ##############################################################################################################################
 #
-#  Program to extract and summarize outputs from N2O Rose Simulations by Dr. Saha.
+#  Program to extract and summarize outputs from N2O Rose Simulations by Dr. Debasish Saha.
 #
 #  Felipe Montes,  2016/05/03
 #
@@ -131,24 +131,7 @@ for (i in FileNames) {
 
      Corn<-SeasonOutput[c(MaizeRows,MaizeRows-1),]  ;
      
-     
-     # # Adding the values in pounds per acre and bushels per acre
-     # # Based on the conversion tool in the Iowa State University Extension and Outreach Ag Decision Maker website
-     # # http://www.extension.iastate.edu/agdm/wholefarm/html/c6-80.html
-     # 
-     # Mg_ha_to_Bushels_ac=1000*2.205/(56*2.471)
-     # Mg_ha_to_lb_ac=1000*2.205/2.471
-     # 
-     # 
-     # Corn$`Grain_Yield_Bushel/ac`<-Corn$`Grain_Yield_Mg/ha` * Mg_ha_to_Bushels_ac ;
-     # 
-     # Corn$`Forage_Yield_Bushel/ac`<-Corn$`Forage_Yield_Mg/ha` * Mg_ha_to_lb_ac ;
-     # 
-     # Corn$`Total_Nitrogen_lb/ac`<-Corn$`Total_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
-     # 
-     # Corn$`Root_Nitrogen_lb/ac`<-Corn$`Root_Nitrogen_Mg/ha` * Mg_ha_to_lb_ac  ;
-     # 
-     # Corn$`Grain_Nitrogen_lb/ac`<-Corn$`Grain_Nitrogen_Mg/ha` *  Mg_ha_to_lb_ac  ;
+
      
      # Adding the Water strees indicator based in potential and realized evapotranspiration
      # The Water Stress or water deficit indicator will be calculated as: 1-[Actual_Transpiration_mm / Potential_Transpiration_mm ]
