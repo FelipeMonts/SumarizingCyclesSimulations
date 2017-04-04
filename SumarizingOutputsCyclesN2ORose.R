@@ -58,7 +58,7 @@ dir.create("..\\OutputSummary");
 ###############################################################################################################
 
 
-# Line of codes to convert exell column names to couln numbers to easy extraction in R
+# Line of codes to convert exell column names to column numbers to easy extraction in R
 
 Excel.Columns<-c(LETTERS, paste0("A",LETTERS),paste0("B",LETTERS),paste0("C",LETTERS));
 
